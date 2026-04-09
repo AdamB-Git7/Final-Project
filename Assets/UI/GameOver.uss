@@ -1,0 +1,155 @@
+/* ==========================================
+   SECURITY PROTOCOL — Game Over Stylesheet
+   ========================================== */
+
+#Root {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(4, 2, 2, 0.97);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    display: none;
+}
+
+#Root.visible {
+    display: flex;
+}
+
+/* Static noise overlay */
+#StaticOverlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(200, 200, 200, 0.03);
+    opacity: 0.04;
+}
+
+/* Blood red flash overlay */
+#BloodOverlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(120, 0, 0, 0.0);
+}
+
+/* ---- CONTENT ---- */
+#ContentBlock {
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+#AlertLabel {
+    font-size: 13px;
+    color: rgba(200, 30, 30, 0.9);
+    -unity-font-style: bold;
+    letter-spacing: 6px;
+    margin-bottom: 16px;
+}
+
+#DeadLabel {
+    font-size: 110px;
+    color: rgb(210, 20, 20);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    margin-bottom: 8px;
+}
+
+#SubLabel {
+    font-size: 15px;
+    color: rgba(180, 150, 130, 0.7);
+    -unity-font-style: italic;
+    letter-spacing: 1px;
+    margin-bottom: 40px;
+}
+
+#Divider {
+    width: 280px;
+    height: 1px;
+    background-color: rgba(160, 20, 20, 0.45);
+    margin-bottom: 28px;
+}
+
+#FlavorText {
+    font-size: 13px;
+    color: rgba(140, 110, 90, 0.65);
+    -unity-font-style: italic;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    margin-bottom: 48px;
+}
+
+/* ---- BUTTONS ---- */
+#ButtonGroup {
+    align-items: center;
+    width: 300px;
+}
+
+#RestartButton {
+    width: 280px;
+    height: 52px;
+    background-color: rgb(130, 10, 10);
+    color: rgb(230, 210, 200);
+    font-size: 16px;
+    -unity-font-style: bold;
+    border-width: 1px;
+    border-color: rgba(200, 30, 30, 0.8);
+    border-radius: 2px;
+    margin-bottom: 14px;
+    letter-spacing: 4px;
+    transition: background-color 0.1s ease;
+}
+
+#RestartButton:hover {
+    background-color: rgb(180, 15, 15);
+    border-color: rgb(220, 50, 50);
+    color: rgb(255, 235, 220);
+}
+
+#RestartButton:active {
+    background-color: rgb(70, 5, 5);
+}
+
+#MenuButton {
+    width: 280px;
+    height: 44px;
+    background-color: rgba(18, 12, 10, 0.9);
+    color: rgb(120, 100, 85);
+    font-size: 13px;
+    -unity-font-style: bold;
+    border-width: 1px;
+    border-color: rgba(90, 60, 50, 0.4);
+    border-radius: 2px;
+    letter-spacing: 3px;
+    transition: background-color 0.1s ease;
+}
+
+#MenuButton:hover {
+    background-color: rgba(35, 22, 16, 0.9);
+    color: rgb(155, 120, 95);
+    border-color: rgba(130, 85, 60, 0.55);
+}
+
+#MenuButton:active {
+    background-color: rgba(8, 5, 3, 1);
+}
+
+/* ---- STATUS BAR ---- */
+#StatusBar {
+    position: absolute;
+    bottom: 24px;
+    left: 0; right: 0;
+    align-items: center;
+}
+
+#StatusText {
+    font-size: 10px;
+    color: rgba(180, 30, 30, 0.55);
+    letter-spacing: 1px;
+    -unity-font-style: bold;
+}
+
+#NightLabel {
+    font-size: 10px;
+    color: rgba(140, 110, 90, 0.5);
+    letter-spacing: 1px;
+    margin-top: 4px;
+}

@@ -1,0 +1,118 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="/Assets/UI/MainMenu.uss" />
+    <ui:VisualElement name="Root" style="flex-grow: 1; background-color: rgba(0,0,0,0); flex-direction: column; align-items: center; justify-content: center;">
+
+        <!-- Full-screen scanline / static overlay -->
+        <ui:VisualElement name="StaticOverlay" style="
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(180,180,180,0.05);
+            opacity: 0.05;
+        " />
+
+        <!-- Vignette overlay -->
+        <ui:VisualElement name="Vignette" style="
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0,0,0,0);
+        " />
+
+        <!-- Title block -->
+        <ui:VisualElement name="TitleBlock" style="
+            align-items: center;
+            margin-bottom: 60px;
+        ">
+            <ui:Label name="Subtitle" text="NIGHT SHIFT" style="
+                font-size: 16px;
+                color: rgba(180,30,30,1);
+                -unity-font-style: bold;
+                letter-spacing: 12px;
+                margin-bottom: 8px;
+            " />
+            <ui:Label name="Title" text="SECURITY" style="
+                font-size: 92px;
+                color: rgba(220,210,190,1);
+                -unity-font-style: bold;
+                -unity-text-align: middle-center;
+            " />
+            <ui:Label name="TitleSub" text="PROTOCOL" style="
+                font-size: 92px;
+                color: rgba(220,210,190,1);
+                -unity-font-style: bold;
+                -unity-text-align: middle-center;
+                margin-top: -20px;
+            " />
+            <ui:Label name="Tagline" text="— They're still in the building —" style="
+                font-size: 14px;
+                color: rgba(160,30,30,0.85);
+                -unity-font-style: italic;
+                margin-top: 14px;
+                letter-spacing: 2px;
+            " />
+        </ui:VisualElement>
+
+        <!-- Divider line -->
+        <ui:VisualElement name="Divider" style="
+            width: 320px;
+            height: 1px;
+            background-color: rgba(180,30,30,0.5);
+            margin-bottom: 48px;
+        " />
+
+        <!-- Button group -->
+        <ui:VisualElement name="ButtonGroup" style="
+            align-items: center;
+            width: 300px;
+        ">
+            <ui:Button name="StartButton" text="BEGIN NIGHT SHIFT" style="
+                width: 280px;
+                height: 52px;
+                background-color: rgba(140,10,10,1);
+                color: rgba(230,220,200,1);
+                font-size: 16px;
+                -unity-font-style: bold;
+                border-width: 1px;
+                border-color: rgba(200,30,30,0.8);
+                border-radius: 2px;
+                margin-bottom: 16px;
+                letter-spacing: 3px;
+                cursor: link;
+            " />
+            <ui:Button name="QuitButton" text="ABANDON POST" style="
+                width: 280px;
+                height: 44px;
+                background-color: rgba(20,15,10,0.85);
+                color: rgba(130,110,90,1);
+                font-size: 13px;
+                -unity-font-style: bold;
+                border-width: 1px;
+                border-color: rgba(100,80,60,0.4);
+                border-radius: 2px;
+                letter-spacing: 3px;
+                cursor: link;
+            " />
+        </ui:VisualElement>
+
+        <!-- Bottom status bar -->
+        <ui:VisualElement name="StatusBar" style="
+            position: absolute;
+            bottom: 24px;
+            left: 0; right: 0;
+            align-items: center;
+        ">
+            <ui:Label name="StatusText" text="[ CAMERA SYSTEM ONLINE ] [ MOTION SENSORS ACTIVE ] [ DOORS LOCKED ]" style="
+                font-size: 10px;
+                color: rgba(100,180,100,0.6);
+                letter-spacing: 1px;
+                -unity-font-style: bold;
+            " />
+            <ui:Label name="WarningText" text="WARNING: UNAUTHORIZED PRESENCE DETECTED — NIGHT 1" style="
+                font-size: 10px;
+                color: rgba(200,30,30,0.7);
+                letter-spacing: 1px;
+                margin-top: 4px;
+            " />
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>
