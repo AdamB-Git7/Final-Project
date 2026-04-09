@@ -1,0 +1,36 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="/Assets/UI/GameOver.uss" />
+    <ui:VisualElement name="Root">
+
+        <!-- Static noise overlay -->
+        <ui:VisualElement name="StaticOverlay" />
+
+        <!-- Red flash overlay — fades in on death -->
+        <ui:VisualElement name="BloodOverlay" />
+
+        <!-- Center content -->
+        <ui:VisualElement name="ContentBlock">
+
+            <ui:Label name="AlertLabel" text="[ SECURITY BREACH ]" />
+            <ui:Label name="DeadLabel" text="YOU DIED" />
+            <ui:Label name="SubLabel" text="The night shift has claimed another soul." />
+
+            <ui:VisualElement name="Divider" />
+
+            <ui:Label name="FlavorText" text="It found a way in.&#10;You never stood a chance." />
+
+            <ui:VisualElement name="ButtonGroup">
+                <ui:Button name="RestartButton" text="TRY AGAIN" />
+                <ui:Button name="MenuButton" text="ABANDON POST" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+        <!-- Bottom status -->
+        <ui:VisualElement name="StatusBar">
+            <ui:Label name="StatusText" text="[ ALL CAMERAS OFFLINE ] [ MOTION SENSORS TRIGGERED ] [ DOORS OPEN ]" />
+            <ui:Label name="NightLabel" text="INCIDENT REPORT — NIGHT 1" />
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

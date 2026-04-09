@@ -13,6 +13,7 @@ public class GameManager : MonoBehaviour
     public TMP_Text nightText;
     public GameObject gameOverPanel;
     public GameObject winPanel;
+    public GameOverController gameOverController;
 
     [Header("Audio")]
     public AudioSource ambientAudio;
@@ -72,6 +73,9 @@ public class GameManager : MonoBehaviour
 
         if (gameOverPanel != null)
             gameOverPanel.SetActive(true);
+
+        if (gameOverController != null)
+            gameOverController.Show();
 
         if (ambientAudio != null)
             ambientAudio.Stop();

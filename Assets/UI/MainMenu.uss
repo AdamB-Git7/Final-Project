@@ -1,0 +1,163 @@
+/* ==========================================
+   SECURITY PROTOCOL — Main Menu Stylesheet
+   ========================================== */
+
+/* Root fills the entire screen with a dark office atmosphere */
+#Root {
+    flex-grow: 1;
+    background-color: rgb(6, 5, 4);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* Scanline / static noise overlay — opacity animated via C# */
+#StaticOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(200, 200, 200, 0.04);
+}
+
+/* Dark vignette — CSS radial gradient not supported in UIToolkit, 
+   so we fake it with a semi-transparent black element */
+#Vignette {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.55);
+}
+
+/* ---- TITLE BLOCK ---- */
+#TitleBlock {
+    align-items: center;
+    margin-bottom: 60px;
+}
+
+#Subtitle {
+    font-size: 16px;
+    color: rgb(180, 30, 30);
+    -unity-font-style: bold;
+    letter-spacing: 12px;
+    margin-bottom: 8px;
+}
+
+#Title {
+    font-size: 92px;
+    color: rgb(220, 210, 190);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+#TitleSub {
+    font-size: 92px;
+    color: rgb(220, 210, 190);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    margin-top: -20px;
+}
+
+#Tagline {
+    font-size: 14px;
+    color: rgba(160, 30, 30, 0.85);
+    -unity-font-style: italic;
+    margin-top: 14px;
+    letter-spacing: 2px;
+}
+
+/* ---- DIVIDER ---- */
+#Divider {
+    width: 320px;
+    height: 1px;
+    background-color: rgba(180, 30, 30, 0.5);
+    margin-bottom: 48px;
+}
+
+/* ---- BUTTON GROUP ---- */
+#ButtonGroup {
+    align-items: center;
+    width: 300px;
+}
+
+/* Primary: Start */
+#StartButton {
+    width: 280px;
+    height: 52px;
+    background-color: rgb(140, 10, 10);
+    color: rgb(230, 220, 200);
+    font-size: 16px;
+    -unity-font-style: bold;
+    border-width: 1px;
+    border-color: rgba(200, 30, 30, 0.8);
+    border-radius: 2px;
+    margin-bottom: 16px;
+    letter-spacing: 3px;
+    transition: background-color 0.1s ease;
+}
+
+#StartButton:hover {
+    background-color: rgb(190, 15, 15);
+    border-color: rgb(220, 50, 50);
+    color: rgb(255, 240, 220);
+}
+
+#StartButton:active {
+    background-color: rgb(80, 5, 5);
+}
+
+/* Secondary: Quit */
+#QuitButton {
+    width: 280px;
+    height: 44px;
+    background-color: rgba(20, 15, 10, 0.85);
+    color: rgb(130, 110, 90);
+    font-size: 13px;
+    -unity-font-style: bold;
+    border-width: 1px;
+    border-color: rgba(100, 80, 60, 0.4);
+    border-radius: 2px;
+    letter-spacing: 3px;
+    transition: background-color 0.1s ease;
+}
+
+#QuitButton:hover {
+    background-color: rgba(40, 30, 20, 0.9);
+    color: rgb(160, 130, 100);
+    border-color: rgba(140, 100, 70, 0.6);
+}
+
+#QuitButton:active {
+    background-color: rgba(10, 8, 5, 1);
+}
+
+/* ---- STATUS BAR ---- */
+#StatusBar {
+    position: absolute;
+    bottom: 24px;
+    left: 0;
+    right: 0;
+    align-items: center;
+}
+
+#StatusText {
+    font-size: 10px;
+    color: rgba(100, 180, 100, 0.6);
+    letter-spacing: 1px;
+    -unity-font-style: bold;
+}
+
+#WarningText {
+    font-size: 10px;
+    color: rgba(200, 30, 30, 0.7);
+    letter-spacing: 1px;
+    margin-top: 4px;
+}
