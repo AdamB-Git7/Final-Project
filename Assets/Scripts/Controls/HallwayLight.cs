@@ -1,77 +1,167 @@
+
+// Imports the UnityEngine namespace.
 using UnityEngine;
 
-// =====================================================================
-//  HALLWAY LIGHT SYSTEM
-// =====================================================================
-//  Player holds Z to flash the left hallway light.
-//  Player holds X to flash the right hallway light.
-//  Useful for peeking through windows to see if an animatronic is there.
-//  Drains the camera battery while held.
-// =====================================================================
+
+
+
+
+
+
+
+
+
+// Declares the class named HallwayLightSystem.
 public class HallwayLightSystem : MonoBehaviour
+
+// Opens a new code block.
 {
+
+    // Applies the Header("Controls") attribute.
     [Header("Controls")]
+
+    // Declares the variable leftLightKey and initializes it.
     public KeyCode leftLightKey = KeyCode.Z;
+
+    // Declares the variable rightLightKey and initializes it.
     public KeyCode rightLightKey = KeyCode.X;
 
+
+    // Applies the Header("Battery Drain") attribute.
     [Header("Battery Drain")]
+
+    // Declares the variable drainPerSecond and initializes it.
     public float drainPerSecond = 4f;
 
-    Light leftLight;            // Unity's Light component
-    Light rightLight;
-    SecurityCamera cameraSystem; // we drain its battery
 
-    // =================================================================
-    //  Start() — create the two hallway lights at runtime
-    // =================================================================
+    // Declares the variable leftLight.
+    Light leftLight;
+
+    // Declares the variable rightLight.
+    Light rightLight;
+
+    // Declares the variable cameraSystem.
+    SecurityCamera cameraSystem;
+
+
+
+
+
+    // Declares the method named Start.
     void Start()
+
+    // Opens a new code block.
     {
-        // Make a light just outside each door
+
+
+        // Updates an existing value.
         leftLight  = CreateLight("LeftHallwayLight",  new Vector3(-5.25f, 2.5f, 0));
+
+        // Updates an existing value.
         rightLight = CreateLight("RightHallwayLight", new Vector3( 5.25f, 2.5f, 0));
 
-        // Find the camera system so we can drain its battery
+
+
+        // Updates an existing value.
         cameraSystem = Object.FindFirstObjectByType<SecurityCamera>();
+
+    // Closes the current code block.
     }
 
-    // Helper: build a Light component on a new GameObject
+
+
+    // Declares the method named CreateLight.
     Light CreateLight(string name, Vector3 pos)
+
+    // Opens a new code block.
     {
+
+        // Declares the variable obj and initializes it.
         GameObject obj = new GameObject(name);
+
+        // Updates an existing value.
         obj.transform.position = pos;
+
+        // Declares the variable light and initializes it.
         Light light = obj.AddComponent<Light>();
+
+        // Updates an existing value.
         light.type = LightType.Point;
-        light.color = new Color(1f, 0.95f, 0.7f);  // warm yellow
-        light.intensity = 0f;                       // off by default
+
+        // Updates an existing value.
+        light.color = new Color(1f, 0.95f, 0.7f);
+
+        // Updates an existing value.
+        light.intensity = 0f;
+
+        // Updates an existing value.
         light.range = 8f;
+
+        // Updates an existing value.
         light.shadows = LightShadows.Soft;
+
+        // Returns the specified value.
         return light;
+
+    // Closes the current code block.
     }
 
-    // =================================================================
-    //  Update() — runs every frame
-    // =================================================================
+
+
+
+
+    // Declares the method named Update.
     void Update()
+
+    // Opens a new code block.
     {
-        // GetKey returns true while the key is HELD (not just pressed)
+
+
+        // Declares the variable leftHeld and initializes it.
         bool leftHeld  = Input.GetKey(leftLightKey);
+
+        // Declares the variable rightHeld and initializes it.
         bool rightHeld = Input.GetKey(rightLightKey);
 
-        // Fade each light to on or off
+
+
+        // Calls a method.
         SetLight(leftLight,  leftHeld);
+
+        // Calls a method.
         SetLight(rightLight, rightHeld);
 
-        // While either light is on, drain the camera battery
+
+
+        // Checks whether the condition is true.
         if ((leftHeld || rightHeld) && cameraSystem != null)
+
+            // Calls a method.
             cameraSystem.DrainBatteryExternal(drainPerSecond * Time.deltaTime);
+
+    // Closes the current code block.
     }
 
-    // Smoothly raise/lower a light's intensity
+
+
+    // Declares the method named SetLight.
     void SetLight(Light light, bool on)
+
+    // Opens a new code block.
     {
+
+        // Checks the condition and runs the inline statement when it is true.
         if (light == null) return;
+
+        // Declares the variable target and initializes it.
         float target = on ? 4f : 0f;
-        // MoveTowards = step toward target by a fixed amount per frame
+
+
+        // Updates an existing value.
         light.intensity = Mathf.MoveTowards(light.intensity, target, Time.deltaTime * 20f);
+
+    // Closes the current code block.
     }
+
+// Closes the current code block.
 }

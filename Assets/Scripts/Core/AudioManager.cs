@@ -1,61 +1,139 @@
+
+// Imports the UnityEngine namespace.
 using UnityEngine;
 
-// =====================================================================
-//  AUDIO MANAGER — plays background music and sound effects
-// =====================================================================
-//  Other scripts call AudioManager.Instance.PlayDoorClose() etc.
-//  Uses AudioSource (Unity's built-in component for sound).
-// =====================================================================
+
+
+
+
+
+
+
+// Declares the class named AudioManager.
 public class AudioManager : MonoBehaviour
+
+// Opens a new code block.
 {
-    // "Instance" is a public reference so any script can reach this one
-    // without having to find it. Set in Awake() once and used everywhere.
+
+
+
+    // Declares the variable Instance.
     public static AudioManager Instance;
 
-    [Header("Audio Clips")]
-    public AudioClip ambientLoop;   // background music
-    public AudioClip doorSlam;      // door close SFX
-    public AudioClip jumpscare;     // death scream
-    public AudioClip footstep;      // animatronic walking
-    public AudioClip cameraClick;   // camera UI open/close
 
+    // Applies the Header("Audio Clips") attribute.
+    [Header("Audio Clips")]
+
+    // Declares the variable ambientLoop.
+    public AudioClip ambientLoop;
+
+    // Declares the variable doorSlam.
+    public AudioClip doorSlam;
+
+    // Declares the variable jumpscare.
+    public AudioClip jumpscare;
+
+    // Declares the variable footstep.
+    public AudioClip footstep;
+
+    // Declares the variable cameraClick.
+    public AudioClip cameraClick;
+
+
+    // Applies the Header("Volumes") attribute.
     [Header("Volumes")]
+
+    // Declares the variable ambientVolume and initializes it.
     public float ambientVolume = 0.3f;
+
+    // Declares the variable sfxVolume and initializes it.
     public float sfxVolume = 0.7f;
 
-    AudioSource ambientSource;   // plays the looping music
-    AudioSource sfxSource;       // plays one-shot effects
 
+    // Declares the variable ambientSource.
+    AudioSource ambientSource;
+
+    // Declares the variable sfxSource.
+    AudioSource sfxSource;
+
+
+    // Declares the method named Awake.
     void Awake()
+
+    // Opens a new code block.
     {
-        Instance = this;   // any script can now find us via AudioManager.Instance
+
+        // Updates an existing value.
+        Instance = this;
+
+    // Closes the current code block.
     }
 
+
+    // Declares the method named Start.
     void Start()
+
+    // Opens a new code block.
     {
-        // Load each clip from the Resources folder if not set in Inspector
+
+
+        // Checks the condition and runs the inline statement when it is true.
         if (ambientLoop == null) ambientLoop = Resources.Load<AudioClip>("ambient_drone");
+
+        // Checks the condition and runs the inline statement when it is true.
         if (doorSlam == null)    doorSlam    = Resources.Load<AudioClip>("door_slam");
+
+        // Checks the condition and runs the inline statement when it is true.
         if (jumpscare == null)   jumpscare   = Resources.Load<AudioClip>("jumpscare");
+
+        // Checks the condition and runs the inline statement when it is true.
         if (footstep == null)    footstep    = Resources.Load<AudioClip>("footstep");
+
+        // Checks the condition and runs the inline statement when it is true.
         if (cameraClick == null) cameraClick = Resources.Load<AudioClip>("camera_click");
 
-        // First AudioSource: looping background music
+
+
+        // Updates an existing value.
         ambientSource = gameObject.AddComponent<AudioSource>();
+
+        // Updates an existing value.
         ambientSource.clip = ambientLoop;
+
+        // Updates an existing value.
         ambientSource.loop = true;
+
+        // Updates an existing value.
         ambientSource.volume = ambientVolume;
+
+        // Checks the condition and runs the inline statement when it is true.
         if (ambientLoop != null) ambientSource.Play();
 
-        // Second AudioSource: one-shot sound effects
+
+
+        // Updates an existing value.
         sfxSource = gameObject.AddComponent<AudioSource>();
+
+        // Updates an existing value.
         sfxSource.volume = sfxVolume;
+
+    // Closes the current code block.
     }
 
-    // PlayOneShot plays a sound without interrupting other sounds.
-    // Multiple SFX can overlap (door slam + footstep at the same time).
+
+
+
+    // Executes this statement.
     public void PlayDoorClose()   { if (doorSlam != null)    sfxSource.PlayOneShot(doorSlam); }
+
+    // Executes this statement.
     public void PlayJumpscare()   { if (jumpscare != null)   sfxSource.PlayOneShot(jumpscare); }
+
+    // Executes this statement.
     public void PlayFootstep()    { if (footstep != null)    sfxSource.PlayOneShot(footstep); }
+
+    // Executes this statement.
     public void PlayCameraClick() { if (cameraClick != null) sfxSource.PlayOneShot(cameraClick); }
+
+// Closes the current code block.
 }

@@ -1,190 +1,412 @@
+
+// Imports the UnityEngine namespace.
 using UnityEngine;
+
+// Imports the UnityEngine.SceneManagement namespace.
 using UnityEngine.SceneManagement;
+
+// Imports the TMPro namespace.
 using TMPro;
 
-// =====================================================================
-//  GAME MANAGER — the brain of the game
-// =====================================================================
-//  Responsibilities:
-//    - Track the night timer (12 AM → 6 AM)
-//    - Show the clock on the office monitor
-//    - Apply difficulty based on the current night (1, 2, or 3)
-//    - Win the game when the timer reaches 6 AM
-//    - Trigger game over when an animatronic catches you
-//    - Restart on R press, advance to next night on N press
-// =====================================================================
-public class GameManager : MonoBehaviour
-{
-    [Header("Night Settings")]
-    public float nightDuration = 120f;  // how long the night lasts (real seconds)
 
+
+
+
+
+
+
+
+
+
+
+
+// Declares the class named GameManager.
+public class GameManager : MonoBehaviour
+
+// Opens a new code block.
+{
+
+    // Applies the Header("Night Settings") attribute.
+    [Header("Night Settings")]
+
+    // Declares the variable nightDuration and initializes it.
+    public float nightDuration = 120f;
+
+
+    // Applies the Header("UI References") attribute.
     [Header("UI References")]
+
+    // Declares the variable clockText.
     public TMP_Text clockText;
+
+    // Declares the variable nightText.
     public TMP_Text nightText;
 
-    // Public so EnemyAI can read it. Saved in PlayerPrefs so it persists
-    // across scene reloads (so beating Night 1 advances to Night 2)
+
+
+
+    // Declares the variable currentNight and initializes it.
     public int currentNight = 1;
 
+
+    // Declares the variable timer.
     float timer;
+
+    // Declares the variable isGameOver.
     bool isGameOver;
+
+    // Declares the variable hasWon.
     bool hasWon;
 
-    // =================================================================
-    //  Start() — runs once when the game begins
-    // =================================================================
+
+
+
+
+    // Declares the method named Start.
     void Start()
+
+    // Opens a new code block.
     {
-        // Read the saved night number (defaults to 1 if never saved)
+
+
+        // Updates an existing value.
         currentNight = PlayerPrefs.GetInt("CurrentNight", 1);
+
+        // Checks the condition and runs the inline statement when it is true.
         if (currentNight < 1 || currentNight > 3) currentNight = 1;
 
-        // Build the scene first
+
+
+        // Calls a method.
         SceneSetup.EnsureSceneIsBuilt(this);
 
-        // Reset state
+
+
+        // Updates an existing value.
         timer = 0f;
+
+        // Updates an existing value.
         isGameOver = false;
+
+        // Updates an existing value.
         hasWon = false;
 
-        // Auto-find the clock if not wired up
+
+
+        // Checks whether the condition is true.
         if (clockText == null)
+
+            // Updates an existing value.
             clockText = SceneSetup.FindOrCreateClockText();
 
-        // Show the night number on the office display
+
+
+        // Checks the condition and runs the inline statement when it is true.
         if (nightText != null) nightText.text = "Night " + currentNight;
 
-        // Apply the night's difficulty to all animatronics
+
+
+        // Calls a method.
         ApplyDifficulty();
 
-        // Show the cursor for camera clicks
+
+
+        // Updates an existing value.
         Cursor.lockState = CursorLockMode.None;
+
+        // Updates an existing value.
         Cursor.visible = true;
+
+    // Closes the current code block.
     }
 
-    // =================================================================
-    //  ApplyDifficulty() — make AIs harder each night
-    // =================================================================
+
+
+
+
+    // Declares the method named ApplyDifficulty.
     void ApplyDifficulty()
+
+    // Opens a new code block.
     {
+
+        // Declares the variable enemies and initializes it.
         EnemyAI[] enemies = Object.FindObjectsByType<EnemyAI>(FindObjectsSortMode.None);
+
+        // Iterates through each item in the collection.
         foreach (EnemyAI ai in enemies)
+
+        // Opens a new code block.
         {
+
+            // Checks whether the condition is true.
             if (currentNight == 1)
+
+            // Opens a new code block.
             {
-                ai.moveSpeed = 2.5f;          // slow walk
-                ai.aggressionGrowth = 0.03f;  // calm
+
+                // Updates an existing value.
+                ai.moveSpeed = 2.5f;
+
+                // Updates an existing value.
+                ai.aggressionGrowth = 0.03f;
+
+            // Closes the current code block.
             }
+
+            // Checks the next condition when earlier conditions were false.
             else if (currentNight == 2)
+
+            // Opens a new code block.
             {
-                ai.moveSpeed = 3.5f;          // medium
+
+                // Updates an existing value.
+                ai.moveSpeed = 3.5f;
+
+                // Updates an existing value.
                 ai.aggressionGrowth = 0.05f;
+
+            // Closes the current code block.
             }
-            else // night 3
+
+            // Runs the fallback branch when earlier conditions were false.
+            else
+
+            // Opens a new code block.
             {
-                ai.moveSpeed = 5f;            // fast
-                ai.aggressionGrowth = 0.08f;  // brutal
+
+                // Updates an existing value.
+                ai.moveSpeed = 5f;
+
+                // Updates an existing value.
+                ai.aggressionGrowth = 0.08f;
+
+            // Closes the current code block.
             }
+
+        // Closes the current code block.
         }
+
+    // Closes the current code block.
     }
 
-    // =================================================================
-    //  Update() — runs every frame
-    // =================================================================
+
+
+
+
+    // Declares the method named Update.
     void Update()
+
+    // Opens a new code block.
     {
-        // If the game is over, listen for restart / next-night keys
+
+
+        // Checks whether the condition is true.
         if (isGameOver || hasWon)
+
+        // Opens a new code block.
         {
+
+            // Checks the condition and runs the inline statement when it is true.
             if (Input.GetKeyDown(KeyCode.R)) RestartGame();
-            // After winning, N goes to the next night (or to credits if night 3)
+
+
+            // Checks the condition and runs the inline statement when it is true.
             if (hasWon && Input.GetKeyDown(KeyCode.N)) LoadNextNight();
+
+            // Returns from the current method.
             return;
+
+        // Closes the current code block.
         }
 
-        // Advance the timer
+
+
+        // Updates an existing value.
         timer += Time.deltaTime;
+
+        // Calls a method.
         UpdateClock();
 
-        // Hit 6 AM = win
+
+
+        // Checks the condition and runs the inline statement when it is true.
         if (timer >= nightDuration) WinNight();
+
+    // Closes the current code block.
     }
 
-    // =================================================================
-    //  UpdateClock() — show "12:30 AM" style time on the monitor
-    // =================================================================
+
+
+
+
+    // Declares the method named UpdateClock.
     void UpdateClock()
+
+    // Opens a new code block.
     {
+
+        // Declares the variable progress and initializes it.
         float progress = timer / nightDuration;
+
+        // Declares the variable totalMinutes and initializes it.
         int totalMinutes = Mathf.FloorToInt(progress * 360f);
+
+        // Declares the variable snappedMinutes and initializes it.
         int snappedMinutes = (totalMinutes / 30) * 30;
+
+        // Declares the variable hour and initializes it.
         int hour = snappedMinutes / 60;
+
+        // Declares the variable minute and initializes it.
         int minute = snappedMinutes % 60;
+
+        // Declares the variable displayHour and initializes it.
         int displayHour = (hour == 0) ? 12 : hour;
+
+        // Checks whether the condition is true.
         if (clockText != null)
+
+            // Updates an existing value.
             clockText.text = displayHour + ":" + minute.ToString("00") + " AM";
+
+    // Closes the current code block.
     }
 
-    // =================================================================
-    //  TriggerGameOver() — called when an AI catches the player
-    // =================================================================
+
+
+
+
+    // Declares the method named TriggerGameOver.
     public void TriggerGameOver()
+
+    // Opens a new code block.
     {
+
+        // Checks the condition and runs the inline statement when it is true.
         if (isGameOver || hasWon) return;
+
+        // Updates an existing value.
         isGameOver = true;
 
-        // Reset to Night 1 on death
+
+
+        // Calls a method.
         PlayerPrefs.SetInt("CurrentNight", 1);
 
-        // Play jumpscare → YOU DIED screen
+
+
+        // Declares the variable jumpObj and initializes it.
         GameObject jumpObj = new GameObject("JumpscareEffect");
+
+        // Declares the variable jump and initializes it.
         JumpscareEffect jump = jumpObj.AddComponent<JumpscareEffect>();
+
+        // Calls a method.
         jump.Play(SceneSetup.ShowGameOverScreen);
+
+    // Closes the current code block.
     }
 
-    // =================================================================
-    //  WinNight() — runs when the timer reaches 6 AM
-    // =================================================================
+
+
+
+
+    // Declares the method named WinNight.
     void WinNight()
+
+    // Opens a new code block.
     {
+
+        // Updates an existing value.
         hasWon = true;
+
+        // Checks the condition and runs the inline statement when it is true.
         if (clockText != null) clockText.text = "6 AM";
 
-        // If they beat night 3, show the credits / final win
+
+
+        // Checks whether the condition is true.
         if (currentNight >= 3)
+
+        // Opens a new code block.
         {
+
+            // Calls a method.
             SceneSetup.ShowFinalWinScreen();
-            PlayerPrefs.SetInt("CurrentNight", 1);  // reset for next playthrough
+
+            // Calls a method.
+            PlayerPrefs.SetInt("CurrentNight", 1);
+
+        // Closes the current code block.
         }
+
+        // Runs the fallback branch when earlier conditions were false.
         else
+
+        // Opens a new code block.
         {
-            // Otherwise show the regular sunrise screen with "Press N for next night"
+
+
+            // Calls a method.
             SceneSetup.ShowWinScreen(currentNight);
+
+        // Closes the current code block.
         }
+
+    // Closes the current code block.
     }
 
-    // =================================================================
-    //  RestartGame() — reload the current scene
-    // =================================================================
+
+
+
+
+    // Declares the method named RestartGame.
     public void RestartGame()
+
+    // Opens a new code block.
     {
+
+        // Calls a method.
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+
+    // Closes the current code block.
     }
 
-    // =================================================================
-    //  LoadNextNight() — save next night and reload the scene
-    // =================================================================
+
+
+
+
+    // Declares the method named LoadNextNight.
     public void LoadNextNight()
+
+    // Opens a new code block.
     {
+
+        // Calls a method.
         PlayerPrefs.SetInt("CurrentNight", currentNight + 1);
+
+        // Calls a method.
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+
+    // Closes the current code block.
     }
 
-    // =================================================================
-    //  IsGameActive() — used by EnemyAI to know if it should pause
-    // =================================================================
+
+
+
+
+    // Declares the method named IsGameActive.
     public bool IsGameActive()
+
+    // Opens a new code block.
     {
+
+        // Returns the specified value.
         return !isGameOver && !hasWon;
+
+    // Closes the current code block.
     }
+
+// Closes the current code block.
 }
