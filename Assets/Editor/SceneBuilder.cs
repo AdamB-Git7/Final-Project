@@ -1,17 +1,70 @@
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine.AI;
+using UnityEngine.UI;
 using Unity.AI.Navigation;
+using TMPro;
 
 public class SceneBuilder : EditorWindow
 {
-    [MenuItem("Night Shift/Build Scene")]
-    static void BuildScene()
+    // Quick scene switch — see the map without playing
+    [MenuItem("Night Shift/View Map")]
+    static void ViewMap()
     {
-        if (!EditorUtility.DisplayDialog("Build Scene",
-            "This will CLEAR the scene and rebuild everything.\nContinue?", "Build", "Cancel"))
-            return;
+        EditorSceneManager.OpenScene("Assets/scene.unity");
+    }
 
+    // Quick scene switch — back to the menu
+    [MenuItem("Night Shift/View Menu")]
+    static void ViewMenu()
+    {
+        EditorSceneManager.OpenScene("Assets/Scenes/MainMenu.unity");
+    }
+
+    // ONE button that builds & saves both scenes (menu + game)
+    [MenuItem("Night Shift/Build")]
+    static void Build()
+    {
+        if (!EditorUtility.DisplayDialog("Build Everything",
+            "This will rebuild and save BOTH scenes:\n" +
+            " • Main Menu (Assets/Scenes/MainMenu.unity)\n" +
+            " • Game World (Assets/scene.unity)\n\nContinue?",
+            "Build", "Cancel")) return;
+
+        // Step 1: build the main menu and save it
+        var menuScene = EditorSceneManager.OpenScene("Assets/Scenes/MainMenu.unity");
+        BuildMainMenuScene();
+        EditorSceneManager.SaveScene(menuScene);
+
+        // Step 2: build the game scene and save it
+        var gameScene = EditorSceneManager.OpenScene("Assets/scene.unity");
+        BuildGameScene();
+        EditorSceneManager.SaveScene(gameScene);
+
+        // Step 3: leave the user on the menu so they can hit Play
+        EditorSceneManager.OpenScene("Assets/Scenes/MainMenu.unity");
+
+        Debug.Log("Build complete. Hit Play to test.");
+    }
+
+    static void BuildMainMenuScene()
+    {
+        // Clear everything in the scene
+        foreach (GameObject obj in Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
+        {
+            if (obj == null) continue;
+            if (obj.transform.parent != null) continue;
+            Object.DestroyImmediate(obj);
+        }
+
+        // Spawn the SimpleMainMenu — it builds the UI in Start()
+        GameObject menu = new GameObject("MainMenu");
+        menu.AddComponent<SimpleMainMenu>();
+    }
+
+    static void BuildGameScene()
+    {
         ClearScene();
         CreateMaterials();
         BuildOffice();
@@ -19,9 +72,41 @@ public class SceneBuilder : EditorWindow
         BuildLighting();
         BuildNavMesh();
         BuildDoors();
+        BuildSpots();
         BuildEnemy();
+        BuildClown();
+        BuildMonitorClock();
         BuildGameManager();
         TestNavMesh();
+    }
+
+    static void BuildSpots()
+    {
+        GameObject parent = new GameObject("AISpots");
+        MakeNavSpot(parent, "Spot_Corridor",      new Vector3( 0f,    0.5f, -19f));
+        MakeNavSpot(parent, "Spot_LeftAlcove",    new Vector3(-7.25f, 0.5f, -7f));
+        MakeNavSpot(parent, "Spot_RightAlcove",   new Vector3( 7.25f, 0.5f, -7f));
+        MakeNavSpot(parent, "Spot_Stage",         new Vector3( 0f,    0.5f, -23f));
+        MakeNavSpot(parent, "Spot_Classroom",     new Vector3(-9.5f,  0.5f, -12f));
+        MakeNavSpot(parent, "Spot_Bathroom",      new Vector3( 9.5f,  0.5f, -12f));
+        MakeNavSpot(parent, "Spot_LeftDoor",      new Vector3(-5.25f, 0.5f,  0f));
+        MakeNavSpot(parent, "Spot_RightDoor",     new Vector3( 5.25f, 0.5f,  0f));
+        MakeNavSpot(parent, "Spot_OfficeCenter",  new Vector3( 0f,    0.5f,  1f));
+    }
+
+    static void MakeNavSpot(GameObject parent, string name, Vector3 pos)
+    {
+        GameObject obj = new GameObject(name);
+        obj.transform.parent = parent.transform;
+        obj.transform.position = pos;
+    }
+
+    static void BuildClown()
+    {
+        GameObject tmp = new GameObject("TempClownBuilder");
+        var builder = tmp.AddComponent<WorldBuilder>();
+        builder.BuildClownEnemy(new Vector3(5.25f, 1f, -15f));
+        Object.DestroyImmediate(tmp);
     }
 
     static void ClearScene()
@@ -50,7 +135,7 @@ public class SceneBuilder : EditorWindow
 
     static Material CreateMat(string matName, Color color)
     {
-        string path = "Assets/Materials/" + matName + ".mat";
+        string path = "Assets/Art/Materials/Environment/" + matName + ".mat";
         Material mat = AssetDatabase.LoadAssetAtPath<Material>(path);
         if (mat == null)
         {
@@ -153,11 +238,11 @@ public class SceneBuilder : EditorWindow
 
         // Posters
         MakePoster(office.transform, "PosterRules", new Vector3(-2.5f, 2.0f, -2.38f),
-                   new Vector3(0.7f, 0.9f, 0.02f), "Assets/Textures/poster_rules.png");
+                   new Vector3(0.7f, 0.9f, 0.02f), "Assets/Art/Textures/poster_rules.png");
         MakePoster(office.transform, "PosterCaution", new Vector3(2.5f, 1.8f, -2.38f),
-                   new Vector3(0.6f, 0.6f, 0.02f), "Assets/Textures/poster_caution.png");
+                   new Vector3(0.6f, 0.6f, 0.02f), "Assets/Art/Textures/poster_caution.png");
         MakePoster(office.transform, "PosterCelebrate", new Vector3(-0.5f, 2.5f, -2.38f),
-                   new Vector3(0.5f, 0.65f, 0.02f), "Assets/Textures/poster_celebrate.png");
+                   new Vector3(0.5f, 0.65f, 0.02f), "Assets/Art/Textures/poster_celebrate.png");
     }
 
     static void MakePoster(Transform parent, string name, Vector3 pos, Vector3 scale, string texturePath)
@@ -206,30 +291,323 @@ public class SceneBuilder : EditorWindow
         float h2 = hallH / 2f;
         float lx = -5.25f;
         float rx = 5.25f;
+        float hallLen = 22f;     // longer hallways (was 14)
+        float hallCenter = -9f;  // center of hallway (was -5)
 
-        // Left hallway
+        // ---- LEFT HALLWAY ----
         GameObject leftHall = new GameObject("LeftHallway");
-        MakeBox(leftHall.transform, "Floor", new Vector3(lx, 0, -5f), new Vector3(hallW, 0.1f, 14f), floorMat, true);
-        MakeBox(leftHall.transform, "Ceiling", new Vector3(lx, hallH, -5f), new Vector3(hallW, 0.1f, 14f), ceilingMat, true);
-        MakeBox(leftHall.transform, "OuterWall", new Vector3(lx - hallW/2, h2, -5f), new Vector3(wallT, hallH, 14f), wallMat, true);
+        MakeBox(leftHall.transform, "Floor", new Vector3(lx, 0, hallCenter), new Vector3(hallW, 0.1f, hallLen), floorMat, true);
+        MakeBox(leftHall.transform, "Ceiling", new Vector3(lx, hallH, hallCenter), new Vector3(hallW, 0.1f, hallLen), ceilingMat, true);
+        // Outer wall split for an alcove at z=-7 (alcove from z=-8 to z=-6, depth 1.5 outward)
+        MakeBox(leftHall.transform, "OuterWall_A", new Vector3(lx - hallW/2, h2, -2f), new Vector3(wallT, hallH, 8f), wallMat, true);
+        MakeBox(leftHall.transform, "OuterWall_B", new Vector3(lx - hallW/2, h2, -17.5f), new Vector3(wallT, hallH, 5f), wallMat, true);
+        // Inner wall (gap for office door at z=-1.5 to 1.5)
         MakeBox(leftHall.transform, "InnerWall_Front", new Vector3(lx + hallW/2, h2, 2.75f), new Vector3(wallT, hallH, 2.5f), wallMat, true);
-        MakeBox(leftHall.transform, "InnerWall_Back", new Vector3(lx + hallW/2, h2, -6f), new Vector3(wallT, hallH, 6f), wallMat, true);
+        MakeBox(leftHall.transform, "InnerWall_Back", new Vector3(lx + hallW/2, h2, -10f), new Vector3(wallT, hallH, 14f), wallMat, true);
 
-        // Right hallway
+        // Left alcove (hiding spot - small recess in outer wall at z=-7)
+        BuildAlcove(leftHall.transform, "LeftAlcove", new Vector3(lx - hallW/2 - 1f, 0, -7f), 2f, 2f, hallH, true);
+
+        // ---- RIGHT HALLWAY ----
         GameObject rightHall = new GameObject("RightHallway");
-        MakeBox(rightHall.transform, "Floor", new Vector3(rx, 0, -5f), new Vector3(hallW, 0.1f, 14f), floorMat, true);
-        MakeBox(rightHall.transform, "Ceiling", new Vector3(rx, hallH, -5f), new Vector3(hallW, 0.1f, 14f), ceilingMat, true);
-        MakeBox(rightHall.transform, "OuterWall", new Vector3(rx + hallW/2, h2, -5f), new Vector3(wallT, hallH, 14f), wallMat, true);
+        MakeBox(rightHall.transform, "Floor", new Vector3(rx, 0, hallCenter), new Vector3(hallW, 0.1f, hallLen), floorMat, true);
+        MakeBox(rightHall.transform, "Ceiling", new Vector3(rx, hallH, hallCenter), new Vector3(hallW, 0.1f, hallLen), ceilingMat, true);
+        MakeBox(rightHall.transform, "OuterWall_A", new Vector3(rx + hallW/2, h2, -2f), new Vector3(wallT, hallH, 8f), wallMat, true);
+        MakeBox(rightHall.transform, "OuterWall_B", new Vector3(rx + hallW/2, h2, -17.5f), new Vector3(wallT, hallH, 5f), wallMat, true);
         MakeBox(rightHall.transform, "InnerWall_Front", new Vector3(rx - hallW/2, h2, 2.75f), new Vector3(wallT, hallH, 2.5f), wallMat, true);
-        MakeBox(rightHall.transform, "InnerWall_Back", new Vector3(rx - hallW/2, h2, -6f), new Vector3(wallT, hallH, 6f), wallMat, true);
+        MakeBox(rightHall.transform, "InnerWall_Back", new Vector3(rx - hallW/2, h2, -10f), new Vector3(wallT, hallH, 14f), wallMat, true);
 
-        // Back corridor connecting both hallways
+        BuildAlcove(rightHall.transform, "RightAlcove", new Vector3(rx + hallW/2 + 1f, 0, -7f), 2f, 2f, hallH, false);
+
+        // ---- BACK CORRIDOR (wider, with stage room behind) ----
         GameObject corridor = new GameObject("BackCorridor");
-        MakeBox(corridor.transform, "Floor", new Vector3(0, 0, -11f), new Vector3(14f, 0.1f, 2.5f), floorMat, true);
-        MakeBox(corridor.transform, "Ceiling", new Vector3(0, hallH, -11f), new Vector3(14f, 0.1f, 2.5f), ceilingMat, true);
-        MakeBox(corridor.transform, "BackWall", new Vector3(0, h2, -12.25f), new Vector3(14f, hallH, wallT), wallMat, true);
-        MakeBox(corridor.transform, "LeftWall", new Vector3(-7f, h2, -11f), new Vector3(wallT, hallH, 2.5f), wallMat, true);
-        MakeBox(corridor.transform, "RightWall", new Vector3(7f, h2, -11f), new Vector3(wallT, hallH, 2.5f), wallMat, true);
+        float corrZ = -19f;
+        MakeBox(corridor.transform, "Floor", new Vector3(0, 0, corrZ), new Vector3(18f, 0.1f, 3.5f), floorMat, true);
+        MakeBox(corridor.transform, "Ceiling", new Vector3(0, hallH, corrZ), new Vector3(18f, 0.1f, 3.5f), ceilingMat, true);
+        // Far wall has a gap in the middle (entry to stage room)
+        MakeBox(corridor.transform, "FarWall_L", new Vector3(-5.5f, h2, corrZ - 1.75f), new Vector3(7f, hallH, wallT), wallMat, true);
+        MakeBox(corridor.transform, "FarWall_R", new Vector3(5.5f, h2, corrZ - 1.75f), new Vector3(7f, hallH, wallT), wallMat, true);
+        // Side walls
+        MakeBox(corridor.transform, "LeftWall", new Vector3(-9f, h2, corrZ), new Vector3(wallT, hallH, 3.5f), wallMat, true);
+        MakeBox(corridor.transform, "RightWall", new Vector3(9f, h2, corrZ), new Vector3(wallT, hallH, 3.5f), wallMat, true);
+
+        // ---- STAGE ROOM (hiding spot behind corridor) ----
+        GameObject stage = new GameObject("StageRoom");
+        float stageZ = -23f;
+        MakeBox(stage.transform, "Floor", new Vector3(0, 0, stageZ), new Vector3(8f, 0.1f, 5f), tileMat, true);
+        MakeBox(stage.transform, "Ceiling", new Vector3(0, hallH, stageZ), new Vector3(8f, 0.1f, 5f), ceilingMat, true);
+        MakeBox(stage.transform, "BackWall", new Vector3(0, h2, stageZ - 2.5f), new Vector3(8f, hallH, wallT), wallMat, true);
+        MakeBox(stage.transform, "LeftWall", new Vector3(-4f, h2, stageZ), new Vector3(wallT, hallH, 5f), wallMat, true);
+        MakeBox(stage.transform, "RightWall", new Vector3(4f, h2, stageZ), new Vector3(wallT, hallH, 5f), wallMat, true);
+        // Stage platform
+        MakeBox(stage.transform, "Platform", new Vector3(0, 0.2f, stageZ - 1.5f), new Vector3(5f, 0.4f, 1.5f), darkMat, true);
+        // Curtains as visual cover
+        MakeBox(stage.transform, "CurtainL", new Vector3(-2.5f, h2, stageZ - 0.5f), new Vector3(0.2f, hallH - 0.3f, 0.05f), doorMat, true);
+        MakeBox(stage.transform, "CurtainR", new Vector3(2.5f, h2, stageZ - 0.5f), new Vector3(0.2f, hallH - 0.3f, 0.05f), doorMat, true);
+
+        // Stage decoration: colorful "FREDDY'S" sign with emissive letters
+        Material[] signColors = {
+            EmissiveMat(new Color(1f, 0.2f, 0.2f)),
+            EmissiveMat(new Color(1f, 0.8f, 0.1f)),
+            EmissiveMat(new Color(0.2f, 0.9f, 0.3f)),
+            EmissiveMat(new Color(0.3f, 0.5f, 1f)),
+            EmissiveMat(new Color(0.9f, 0.2f, 0.9f)),
+            EmissiveMat(new Color(1f, 0.5f, 0.1f)),
+            EmissiveMat(new Color(0.4f, 1f, 0.9f))
+        };
+        // Sign letters as neon tubes (cylinders rotated to face camera)
+        for (int i = 0; i < 7; i++)
+        {
+            GameObject letter = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            letter.name = "SignLetter" + i;
+            letter.transform.parent = stage.transform;
+            letter.transform.localPosition = new Vector3(-1.8f + i * 0.6f, 2.6f, stageZ - 2.35f);
+            letter.transform.localRotation = Quaternion.Euler(90, 0, 0);
+            letter.transform.localScale = new Vector3(0.18f, 0.04f, 0.18f);
+            letter.GetComponent<Renderer>().material = signColors[i];
+            Object.DestroyImmediate(letter.GetComponent<Collider>());
+
+            // Small point light per letter for neon glow
+            GameObject neonLight = new GameObject("NeonLight" + i);
+            neonLight.transform.parent = letter.transform;
+            neonLight.transform.localPosition = Vector3.zero;
+            Light nl = neonLight.AddComponent<Light>();
+            nl.type = LightType.Point;
+            nl.color = signColors[i].color;
+            nl.intensity = 0.8f;
+            nl.range = 2f;
+        }
+        // Spotlight on stage
+        GameObject spot = new GameObject("StageSpot");
+        spot.transform.parent = stage.transform;
+        spot.transform.position = new Vector3(0, 3.2f, stageZ - 1.5f);
+        spot.transform.rotation = Quaternion.Euler(60, 0, 0);
+        Light sl = spot.AddComponent<Light>();
+        sl.type = LightType.Spot;
+        sl.color = new Color(1f, 0.85f, 0.4f);
+        sl.intensity = 4f;
+        sl.range = 8f;
+        sl.spotAngle = 50f;
+        // Drum kit (cylinder)
+        Material drumMat = new Material(Shader.Find("Standard"));
+        drumMat.color = new Color(0.9f, 0.1f, 0.1f);
+        drumMat.SetFloat("_Glossiness", 0.5f);
+        GameObject drum = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        drum.name = "Drum";
+        drum.transform.parent = stage.transform;
+        drum.transform.localPosition = new Vector3(1.5f, 0.7f, stageZ - 1f);
+        drum.transform.localScale = new Vector3(0.5f, 0.3f, 0.5f);
+        drum.GetComponent<Renderer>().material = drumMat;
+        // Microphone stand on stage
+        Material micMat = new Material(Shader.Find("Standard"));
+        micMat.color = new Color(0.4f, 0.4f, 0.45f);
+        micMat.SetFloat("_Glossiness", 0.7f);
+        MakeBox(stage.transform, "MicStand", new Vector3(-1.2f, 0.7f, stageZ - 1f), new Vector3(0.05f, 1.4f, 0.05f), micMat, true);
+        GameObject mic = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        mic.name = "Mic";
+        mic.transform.parent = stage.transform;
+        mic.transform.localPosition = new Vector3(-1.2f, 1.5f, stageZ - 1f);
+        mic.transform.localScale = new Vector3(0.18f, 0.18f, 0.18f);
+        mic.GetComponent<Renderer>().material = micMat;
+
+        // ---- CLASSROOM ----
+        Material greenBoardMat = new Material(Shader.Find("Standard"));
+        greenBoardMat.color = new Color(0.1f, 0.4f, 0.2f);
+        Material woodMat = new Material(Shader.Find("Standard"));
+        woodMat.color = new Color(0.5f, 0.32f, 0.18f);
+        Material redMat = new Material(Shader.Find("Standard"));
+        redMat.color = new Color(0.85f, 0.15f, 0.15f);
+
+        GameObject classroom = new GameObject("Classroom");
+        float classZ = -12f;
+        MakeBox(classroom.transform, "Floor", new Vector3(-9.5f, 0, classZ), new Vector3(5f, 0.1f, 5f), floorMat, true);
+        MakeBox(classroom.transform, "Ceiling", new Vector3(-9.5f, hallH, classZ), new Vector3(5f, 0.1f, 5f), ceilingMat, true);
+        MakeBox(classroom.transform, "FarWall", new Vector3(-12f, h2, classZ), new Vector3(wallT, hallH, 5f), wallMat, true);
+        MakeBox(classroom.transform, "BackWall", new Vector3(-9.5f, h2, classZ - 2.5f), new Vector3(5f, hallH, wallT), wallMat, true);
+        MakeBox(classroom.transform, "FrontWall", new Vector3(-9.5f, h2, classZ + 2.5f), new Vector3(5f, hallH, wallT), wallMat, true);
+
+        // Green chalkboard with white frame
+        MakeBox(classroom.transform, "BoardFrame", new Vector3(-11.88f, 1.7f, classZ), new Vector3(0.04f, 1.6f, 3.4f), woodMat, true);
+        MakeBox(classroom.transform, "Greenboard", new Vector3(-11.85f, 1.7f, classZ), new Vector3(0.05f, 1.4f, 3f), greenBoardMat, true);
+
+        // Teacher desk (bigger, in front of board)
+        MakeBox(classroom.transform, "TeacherDesk", new Vector3(-11f, 0.75f, classZ), new Vector3(0.08f, 1.6f, 1.8f), woodMat, true);
+        MakeBox(classroom.transform, "TeacherDeskFront", new Vector3(-10.65f, 0.4f, classZ), new Vector3(0.7f, 0.8f, 1.8f), woodMat, true);
+        // Globe on teacher desk
+        GameObject globe = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        globe.name = "Globe";
+        globe.transform.parent = classroom.transform;
+        globe.transform.localPosition = new Vector3(-10.85f, 1f, classZ - 0.6f);
+        globe.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+        Material globeMat = new Material(Shader.Find("Standard"));
+        globeMat.color = new Color(0.2f, 0.5f, 0.9f);
+        globe.GetComponent<Renderer>().material = globeMat;
+        // Apple on teacher desk
+        GameObject apple = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        apple.name = "Apple";
+        apple.transform.parent = classroom.transform;
+        apple.transform.localPosition = new Vector3(-10.85f, 0.92f, classZ + 0.5f);
+        apple.transform.localScale = new Vector3(0.15f, 0.15f, 0.15f);
+        apple.GetComponent<Renderer>().material = redMat;
+
+        // Student desks (2 rows of 2) with legs and back-rest chairs
+        for (int row = 0; row < 2; row++)
+            for (int col = 0; col < 2; col++)
+            {
+                float x = -9.5f + col * 1.4f;
+                float z = classZ - 0.7f + row * 1.4f;
+                // Desk top
+                MakeBox(classroom.transform, "StuDesk_" + row + "_" + col, new Vector3(x, 0.62f, z), new Vector3(0.8f, 0.06f, 0.5f), woodMat, true);
+                // 4 legs
+                for (int leg = 0; leg < 4; leg++)
+                {
+                    float lx2 = (leg % 2 == 0) ? -0.35f : 0.35f;
+                    float lz = (leg < 2) ? -0.2f : 0.2f;
+                    var legObj = MakeBox(classroom.transform, "DeskLeg_" + row + col + leg, new Vector3(x + lx2, 0.3f, z + lz), new Vector3(0.04f, 0.6f, 0.04f), darkMat, false);
+                    Object.DestroyImmediate(legObj.GetComponent<Collider>());
+                }
+                // Chair seat
+                MakeBox(classroom.transform, "StuChairSeat_" + row + col, new Vector3(x, 0.42f, z + 0.55f), new Vector3(0.45f, 0.05f, 0.45f), darkMat, true);
+                // Chair back
+                MakeBox(classroom.transform, "StuChairBack_" + row + col, new Vector3(x, 0.7f, z + 0.75f), new Vector3(0.45f, 0.5f, 0.04f), darkMat, true);
+            }
+        MakeBox(classroom.transform, "BridgeFloor", new Vector3(-7f, 0, classZ), new Vector3(2f, 0.1f, 2.5f), floorMat, true);
+
+        // ---- BATHROOM ----
+        Material whiteTileMat = new Material(Shader.Find("Standard"));
+        whiteTileMat.color = new Color(0.92f, 0.93f, 0.95f);
+        whiteTileMat.SetFloat("_Glossiness", 0.4f);
+        Material mirrorMat = new Material(Shader.Find("Standard"));
+        mirrorMat.color = new Color(0.7f, 0.85f, 0.95f);
+        mirrorMat.SetFloat("_Glossiness", 0.95f);
+        mirrorMat.SetFloat("_Metallic", 0.9f);
+
+        GameObject bathroom = new GameObject("Bathroom");
+        float bathZ = -12f;
+        MakeBox(bathroom.transform, "Floor", new Vector3(9.5f, 0, bathZ), new Vector3(5f, 0.1f, 5f), tileMat, true);
+        MakeBox(bathroom.transform, "Ceiling", new Vector3(9.5f, hallH, bathZ), new Vector3(5f, 0.1f, 5f), ceilingMat, true);
+        MakeBox(bathroom.transform, "FarWall", new Vector3(12f, h2, bathZ), new Vector3(wallT, hallH, 5f), wallMat, true);
+        MakeBox(bathroom.transform, "BackWall", new Vector3(9.5f, h2, bathZ - 2.5f), new Vector3(5f, hallH, wallT), wallMat, true);
+        MakeBox(bathroom.transform, "FrontWall", new Vector3(9.5f, h2, bathZ + 2.5f), new Vector3(5f, hallH, wallT), wallMat, true);
+
+        // White tile wall behind sinks
+        MakeBox(bathroom.transform, "TileWall", new Vector3(9.5f, 1.4f, bathZ + 2.45f), new Vector3(5f, 1.6f, 0.05f), whiteTileMat, true);
+
+        // 3 stalls with tinted blue doors
+        Material stallDoorMat = new Material(Shader.Find("Standard"));
+        stallDoorMat.color = new Color(0.3f, 0.5f, 0.7f);
+        for (int i = 0; i < 3; i++)
+        {
+            MakeBox(bathroom.transform, "StallWall" + i, new Vector3(8.5f + i * 1.0f, h2 - 0.3f, bathZ - 1f), new Vector3(0.05f, 2.2f, 1.5f), whiteTileMat, true);
+            MakeBox(bathroom.transform, "StallDoor" + i, new Vector3(9f + i * 1.0f, h2 - 0.3f, bathZ - 0.25f), new Vector3(0.95f, 2.0f, 0.05f), stallDoorMat, true);
+        }
+        // Sinks with mirrors and metal frames
+        Material chromeMat = new Material(Shader.Find("Standard"));
+        chromeMat.color = new Color(0.7f, 0.72f, 0.75f);
+        chromeMat.SetFloat("_Glossiness", 0.9f);
+        chromeMat.SetFloat("_Metallic", 0.95f);
+        for (int i = 0; i < 2; i++)
+        {
+            float sx = 10.5f + i * 1.0f;
+            // Sink basin (rounded look using sphere half)
+            MakeBox(bathroom.transform, "Sink" + i, new Vector3(sx, 0.9f, bathZ + 2.3f), new Vector3(0.7f, 0.2f, 0.4f), whiteTileMat, true);
+            MakeBox(bathroom.transform, "SinkRim" + i, new Vector3(sx, 1.0f, bathZ + 2.28f), new Vector3(0.72f, 0.04f, 0.4f), chromeMat, true);
+            // Mirror frame (chrome) + mirror
+            var mFrame = MakeBox(bathroom.transform, "MirrorFrame" + i, new Vector3(sx, 1.7f, bathZ + 2.43f), new Vector3(0.7f, 0.8f, 0.04f), chromeMat, false);
+            Object.DestroyImmediate(mFrame.GetComponent<Collider>());
+            var mGlass = MakeBox(bathroom.transform, "Mirror" + i, new Vector3(sx, 1.7f, bathZ + 2.41f), new Vector3(0.6f, 0.7f, 0.03f), mirrorMat, false);
+            Object.DestroyImmediate(mGlass.GetComponent<Collider>());
+            // Faucet
+            var faucetBase = MakeBox(bathroom.transform, "FaucetBase" + i, new Vector3(sx, 1.04f, bathZ + 2.18f), new Vector3(0.08f, 0.1f, 0.08f), chromeMat, false);
+            Object.DestroyImmediate(faucetBase.GetComponent<Collider>());
+            GameObject spout = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            spout.name = "FaucetSpout" + i;
+            spout.transform.parent = bathroom.transform;
+            spout.transform.localPosition = new Vector3(sx, 1.15f, bathZ + 2.22f);
+            spout.transform.localRotation = Quaternion.Euler(45, 0, 0);
+            spout.transform.localScale = new Vector3(0.04f, 0.12f, 0.04f);
+            spout.GetComponent<Renderer>().material = chromeMat;
+            Object.DestroyImmediate(spout.GetComponent<Collider>());
+        }
+        // Soap dispensers (small colorful bottles)
+        Material[] soapColors = {
+            EmissiveMat(new Color(0.8f, 0.4f, 0.9f)),
+            EmissiveMat(new Color(0.4f, 0.8f, 0.4f))
+        };
+        for (int i = 0; i < 2; i++)
+        {
+            GameObject soap = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            soap.name = "Soap" + i;
+            soap.transform.parent = bathroom.transform;
+            soap.transform.localPosition = new Vector3(10.8f + i * 0.4f, 1.15f, bathZ + 2.3f);
+            soap.transform.localScale = new Vector3(0.06f, 0.1f, 0.06f);
+            soap.GetComponent<Renderer>().material = soapColors[i];
+        }
+        // OUT OF ORDER sign on one stall
+        Material orangeMat = new Material(Shader.Find("Standard"));
+        orangeMat.color = new Color(1f, 0.6f, 0.1f);
+        MakeBox(bathroom.transform, "SignOOO", new Vector3(10f, 1.7f, bathZ - 0.22f), new Vector3(0.4f, 0.3f, 0.02f), orangeMat, true);
+
+        MakeBox(bathroom.transform, "BridgeFloor", new Vector3(7f, 0, bathZ), new Vector3(2f, 0.1f, 2.5f), floorMat, true);
+
+        // ---- BACK CORRIDOR DECORATIONS ----
+        // Lockers along the far wall — body + door + handle, alternating colors
+        Material lockerHandleMat = new Material(Shader.Find("Standard"));
+        lockerHandleMat.color = new Color(0.7f, 0.7f, 0.75f);
+        lockerHandleMat.SetFloat("_Glossiness", 0.8f);
+        lockerHandleMat.SetFloat("_Metallic", 0.7f);
+        for (int i = 0; i < 8; i++)
+        {
+            Material lockerMat = new Material(Shader.Find("Standard"));
+            lockerMat.color = (i % 2 == 0) ? new Color(0.18f, 0.32f, 0.55f) : new Color(0.55f, 0.25f, 0.28f);
+            lockerMat.SetFloat("_Glossiness", 0.5f);
+            float lx2 = -7f + i * 2f;
+            // Body (recessed)
+            MakeBox(corridor.transform, "Locker" + i, new Vector3(lx2, 1.1f, corrZ - 1.6f), new Vector3(1.0f, 2.2f, 0.4f), lockerMat, true);
+            // Door (slightly in front so it pops out)
+            var door = MakeBox(corridor.transform, "LockerDoor" + i, new Vector3(lx2, 1.1f, corrZ - 1.42f), new Vector3(0.9f, 2.0f, 0.05f), lockerMat, true);
+            Object.DestroyImmediate(door.GetComponent<Collider>());
+            // Vent slits at top
+            for (int v = 0; v < 3; v++)
+            {
+                var slit = MakeBox(corridor.transform, "Vent" + i + "_" + v, new Vector3(lx2, 1.95f - v * 0.08f, corrZ - 1.39f), new Vector3(0.5f, 0.03f, 0.02f), darkMat, false);
+                Object.DestroyImmediate(slit.GetComponent<Collider>());
+            }
+            // Handle
+            GameObject handle = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            handle.name = "Handle" + i;
+            handle.transform.parent = corridor.transform;
+            handle.transform.localPosition = new Vector3(lx2 + 0.3f, 1.1f, corrZ - 1.39f);
+            handle.transform.localRotation = Quaternion.Euler(90, 0, 0);
+            handle.transform.localScale = new Vector3(0.08f, 0.04f, 0.08f);
+            handle.GetComponent<Renderer>().material = lockerHandleMat;
+            Object.DestroyImmediate(handle.GetComponent<Collider>());
+        }
+        // Emergency exit sign (glowing red)
+        Material exitMat = EmissiveMat(new Color(1f, 0.2f, 0.2f));
+        MakeBox(corridor.transform, "ExitSign", new Vector3(0, 2.7f, corrZ - 1.7f), new Vector3(1.2f, 0.4f, 0.05f), exitMat, true);
+    }
+
+    static Material EmissiveMat(Color c)
+    {
+        Material m = new Material(Shader.Find("Standard"));
+        m.color = c;
+        m.EnableKeyword("_EMISSION");
+        m.SetColor("_EmissionColor", c * 1.5f);
+        return m;
+    }
+
+    static void BuildAlcove(Transform parent, string name, Vector3 pos, float width, float depth, float height, bool leftSide)
+    {
+        // Floor of alcove
+        MakeBox(parent, name + "_Floor", pos, new Vector3(depth, 0.1f, width), floorMat, true);
+        MakeBox(parent, name + "_Ceiling", pos + new Vector3(0, height, 0), new Vector3(depth, 0.1f, width), ceilingMat, true);
+        // Outer (back) wall of alcove
+        float side = leftSide ? -1f : 1f;
+        MakeBox(parent, name + "_BackWall", pos + new Vector3(side * depth/2, height/2, 0), new Vector3(0.2f, height, width), wallMat, true);
+        // Front of alcove side walls
+        MakeBox(parent, name + "_SideA", pos + new Vector3(0, height/2, width/2), new Vector3(depth, height, 0.2f), wallMat, true);
+        MakeBox(parent, name + "_SideB", pos + new Vector3(0, height/2, -width/2), new Vector3(depth, height, 0.2f), wallMat, true);
     }
 
     static Material doorMetalMat, doorWarnMat;
@@ -332,7 +710,7 @@ public class SceneBuilder : EditorWindow
         obs.enabled = false;
         dc.doorBlocker = obs;
 
-        PrefabUtility.SaveAsPrefabAsset(door, "Assets/Prefabs/" + name + ".prefab");
+        PrefabUtility.SaveAsPrefabAsset(door, "Assets/Art/Prefabs/" + name + ".prefab");
     }
 
     static void BuildEnemy()
@@ -410,21 +788,7 @@ public class SceneBuilder : EditorWindow
         agent.height = 2f;
 
         EnemyAI ai = enemy.AddComponent<EnemyAI>();
-        ai.moveSpeed = 2f;
-        ai.doorWaitTime = 1.5f;
-
-        GameObject centerPt = new GameObject("CenterPoint");
-        centerPt.transform.position = new Vector3(0, 0.5f, -11f);
-
-        GameObject leftDoorPt = new GameObject("LeftDoorPoint");
-        leftDoorPt.transform.position = new Vector3(-5.25f, 0.5f, 0);
-
-        GameObject rightDoorPt = new GameObject("RightDoorPoint");
-        rightDoorPt.transform.position = new Vector3(5.25f, 0.5f, 0);
-
-        ai.centerPoint = centerPt.transform;
-        ai.leftDoorPoint = leftDoorPt.transform;
-        ai.rightDoorPoint = rightDoorPt.transform;
+        ai.moveSpeed = 5f;
 
         DoorController[] doors = Object.FindObjectsByType<DoorController>(FindObjectsSortMode.None);
         foreach (DoorController dc in doors)
@@ -433,7 +797,7 @@ public class SceneBuilder : EditorWindow
             if (dc.transform.position.x > 0) ai.rightDoor = dc;
         }
 
-        PrefabUtility.SaveAsPrefabAsset(enemy, "Assets/Prefabs/Animatronic.prefab");
+        PrefabUtility.SaveAsPrefabAsset(enemy, "Assets/Art/Prefabs/Animatronic.prefab");
     }
 
     static void BuildLighting()
@@ -451,22 +815,36 @@ public class SceneBuilder : EditorWindow
         CreateLight("LeftDoorLight", new Vector3(-3.5f, 2.5f, 0), new Color(1f, 0.2f, 0.2f), 1.5f, 5f);
         CreateLight("RightDoorLight", new Vector3(3.5f, 2.5f, 0), new Color(1f, 0.2f, 0.2f), 1.5f, 5f);
 
-        CreateLight("LeftHallLight1", new Vector3(-5.25f, 2.5f, -1f), new Color(0.3f, 0.4f, 1f), 1.0f, 8f);
-        CreateLight("LeftHallLight2", new Vector3(-5.25f, 2.5f, -4f), new Color(0.3f, 0.4f, 1f), 0.8f, 8f);
-        CreateLight("LeftHallLight3", new Vector3(-5.25f, 2.5f, -7f), new Color(0.3f, 0.4f, 1f), 0.6f, 8f);
+        CreateLight("LeftHallLight1", new Vector3(-5.25f, 2.5f, -2f), new Color(0.3f, 0.4f, 1f), 1.0f, 8f);
+        CreateLight("LeftHallLight2", new Vector3(-5.25f, 2.5f, -8f), new Color(0.3f, 0.4f, 1f), 0.7f, 8f);
+        CreateLight("LeftHallLight3", new Vector3(-5.25f, 2.5f, -14f), new Color(0.3f, 0.4f, 1f), 0.5f, 8f);
 
-        CreateLight("RightHallLight1", new Vector3(5.25f, 2.5f, -1f), new Color(0.3f, 0.4f, 1f), 1.0f, 8f);
-        CreateLight("RightHallLight2", new Vector3(5.25f, 2.5f, -4f), new Color(0.3f, 0.4f, 1f), 0.8f, 8f);
-        CreateLight("RightHallLight3", new Vector3(5.25f, 2.5f, -7f), new Color(0.3f, 0.4f, 1f), 0.6f, 8f);
+        CreateLight("RightHallLight1", new Vector3(5.25f, 2.5f, -2f), new Color(0.3f, 0.4f, 1f), 1.0f, 8f);
+        CreateLight("RightHallLight2", new Vector3(5.25f, 2.5f, -8f), new Color(0.3f, 0.4f, 1f), 0.7f, 8f);
+        CreateLight("RightHallLight3", new Vector3(5.25f, 2.5f, -14f), new Color(0.3f, 0.4f, 1f), 0.5f, 8f);
 
-        CreateLight("StageLight", new Vector3(-5.25f, 3f, -10f), new Color(1f, 0.8f, 0.4f), 1.5f, 8f);
+        CreateLight("CorridorLight", new Vector3(0, 2.5f, -19f), new Color(0.5f, 0.5f, 0.7f), 0.6f, 12f);
+        CreateLight("StageLight", new Vector3(0, 3f, -23f), new Color(1f, 0.8f, 0.4f), 1.2f, 8f);
+
+        // Classroom - bright fluorescent (TWO lights to fully cover the room)
+        CreateLight("ClassroomLight1", new Vector3(-9.5f, 3.2f, -10.5f), new Color(0.85f, 0.95f, 1f), 2.5f, 10f);
+        CreateLight("ClassroomLight2", new Vector3(-9.5f, 3.2f, -13.5f), new Color(0.85f, 0.95f, 1f), 2.5f, 10f);
+        // Bathroom - bright cold white
+        CreateLight("BathroomLight1", new Vector3(9.5f, 3.2f, -10.5f), new Color(0.95f, 0.95f, 1f), 2.5f, 10f);
+        CreateLight("BathroomLight2", new Vector3(9.5f, 3.2f, -13.5f), new Color(0.95f, 0.95f, 1f), 2.5f, 10f);
+        // Stage colored mood lights
+        CreateLight("StageRedLight",  new Vector3(-2.5f, 2.8f, -23f), new Color(1f, 0.2f, 0.3f),  1.5f, 8f);
+        CreateLight("StageBlueLight", new Vector3(2.5f, 2.8f, -23f),  new Color(0.3f, 0.3f, 1f),  1.5f, 8f);
+        // Corridor — extra lights so cameras can see lockers and sign
+        CreateLight("CorridorLight2", new Vector3(-5f, 2.8f, -20f), new Color(0.7f, 0.7f, 0.85f), 1.2f, 10f);
+        CreateLight("CorridorLight3", new Vector3(5f, 2.8f, -20f),  new Color(0.7f, 0.7f, 0.85f), 1.2f, 10f);
 
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
         RenderSettings.ambientLight = new Color(0.04f, 0.04f, 0.06f);
         RenderSettings.fog = true;
-        RenderSettings.fogColor = new Color(0.01f, 0.01f, 0.02f);
+        RenderSettings.fogColor = new Color(0.02f, 0.02f, 0.03f);
         RenderSettings.fogMode = FogMode.Exponential;
-        RenderSettings.fogDensity = 0.025f;
+        RenderSettings.fogDensity = 0.015f;
 
         Camera mainCam = Camera.main;
         if (mainCam != null)
@@ -504,10 +882,133 @@ public class SceneBuilder : EditorWindow
     {
         GameObject gm = new GameObject("GameManager");
         GameManager manager = gm.AddComponent<GameManager>();
+        manager.nightDuration = 120f;
+        manager.currentNight = 1;
 
         EnemyAI enemy = Object.FindFirstObjectByType<EnemyAI>();
         if (enemy != null)
             enemy.gameManager = manager;
+
+        // Wire monitor clock
+        GameObject clockObj = GameObject.Find("MonitorClockText");
+        if (clockObj != null)
+        {
+            TMP_Text tmp = clockObj.GetComponent<TMP_Text>();
+            manager.clockText = tmp;
+            Debug.Log("[SceneBuilder] Found MonitorClockText, TMP_Text component: " + (tmp != null ? "OK" : "NULL"));
+        }
+        else
+        {
+            Debug.LogError("[SceneBuilder] MonitorClockText GameObject not found!");
+        }
+
+    }
+
+    static void BuildMonitorClock()
+    {
+        GameObject clockObj = new GameObject("MonitorClockText");
+        clockObj.transform.position = new Vector3(1.2f, 1.15f, -0.46f);
+        // Camera is rotated 180 around Y, so flip text 180 around Y to compensate
+        clockObj.transform.rotation = Quaternion.Euler(0, 180, 0);
+
+        TextMeshPro clock = clockObj.AddComponent<TextMeshPro>();
+        clock.text = "12 AM";
+        clock.fontSize = 1.2f;
+        clock.color = new Color(0.3f, 1f, 0.3f);
+        clock.alignment = TextAlignmentOptions.Center;
+        clock.fontStyle = FontStyles.Bold;
+
+        RectTransform rt = clock.rectTransform;
+        rt.sizeDelta = new Vector2(0.7f, 0.4f);
+
+        Debug.Log("[SceneBuilder] Created MonitorClockText at " + clockObj.transform.position);
+    }
+
+    static void BuildHUD()
+    {
+        // Canvas
+        GameObject canvasObj = new GameObject("HUDCanvas");
+        Canvas canvas = canvasObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvasObj.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        canvasObj.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1920, 1080);
+        canvasObj.AddComponent<GraphicRaycaster>();
+
+        // Clock (top right)
+        GameObject clockObj = new GameObject("ClockText");
+        clockObj.transform.SetParent(canvasObj.transform, false);
+        TMP_Text clock = clockObj.AddComponent<TextMeshProUGUI>();
+        clock.text = "12 AM";
+        clock.fontSize = 80;
+        clock.color = new Color(1f, 0.3f, 0.3f);
+        clock.alignment = TextAlignmentOptions.Right;
+        clock.fontStyle = FontStyles.Bold;
+        RectTransform clockRT = clock.rectTransform;
+        clockRT.anchorMin = new Vector2(1, 1);
+        clockRT.anchorMax = new Vector2(1, 1);
+        clockRT.pivot = new Vector2(1, 1);
+        clockRT.anchoredPosition = new Vector2(-40, -40);
+        clockRT.sizeDelta = new Vector2(300, 100);
+
+        // Night display (top left)
+        GameObject nightObj = new GameObject("NightText");
+        nightObj.transform.SetParent(canvasObj.transform, false);
+        TMP_Text night = nightObj.AddComponent<TextMeshProUGUI>();
+        night.text = "Night 1";
+        night.fontSize = 50;
+        night.color = new Color(0.9f, 0.9f, 0.9f);
+        night.alignment = TextAlignmentOptions.Left;
+        night.fontStyle = FontStyles.Bold;
+        RectTransform nightRT = night.rectTransform;
+        nightRT.anchorMin = new Vector2(0, 1);
+        nightRT.anchorMax = new Vector2(0, 1);
+        nightRT.pivot = new Vector2(0, 1);
+        nightRT.anchoredPosition = new Vector2(40, -40);
+        nightRT.sizeDelta = new Vector2(300, 70);
+
+        // Win Panel (full screen overlay, hidden by default)
+        GameObject winPanel = new GameObject("WinPanel");
+        winPanel.transform.SetParent(canvasObj.transform, false);
+        Image winBG = winPanel.AddComponent<Image>();
+        winBG.color = new Color(0f, 0f, 0f, 0.85f);
+        RectTransform winRT = winBG.rectTransform;
+        winRT.anchorMin = Vector2.zero;
+        winRT.anchorMax = Vector2.one;
+        winRT.offsetMin = Vector2.zero;
+        winRT.offsetMax = Vector2.zero;
+
+        // Win title
+        GameObject winTitleObj = new GameObject("WinTitle");
+        winTitleObj.transform.SetParent(winPanel.transform, false);
+        TMP_Text winTitle = winTitleObj.AddComponent<TextMeshProUGUI>();
+        winTitle.text = "6 AM";
+        winTitle.fontSize = 200;
+        winTitle.color = new Color(0.9f, 0.6f, 0.2f);
+        winTitle.alignment = TextAlignmentOptions.Center;
+        winTitle.fontStyle = FontStyles.Bold;
+        RectTransform winTitleRT = winTitle.rectTransform;
+        winTitleRT.anchorMin = new Vector2(0.5f, 0.5f);
+        winTitleRT.anchorMax = new Vector2(0.5f, 0.5f);
+        winTitleRT.pivot = new Vector2(0.5f, 0.5f);
+        winTitleRT.anchoredPosition = new Vector2(0, 100);
+        winTitleRT.sizeDelta = new Vector2(800, 250);
+
+        // Win subtitle
+        GameObject winSubObj = new GameObject("WinSubtitle");
+        winSubObj.transform.SetParent(winPanel.transform, false);
+        TMP_Text winSub = winSubObj.AddComponent<TextMeshProUGUI>();
+        winSub.text = "YOU SURVIVED THE NIGHT";
+        winSub.fontSize = 60;
+        winSub.color = new Color(0.95f, 0.95f, 0.95f);
+        winSub.alignment = TextAlignmentOptions.Center;
+        RectTransform winSubRT = winSub.rectTransform;
+        winSubRT.anchorMin = new Vector2(0.5f, 0.5f);
+        winSubRT.anchorMax = new Vector2(0.5f, 0.5f);
+        winSubRT.pivot = new Vector2(0.5f, 0.5f);
+        winSubRT.anchoredPosition = new Vector2(0, -50);
+        winSubRT.sizeDelta = new Vector2(1200, 100);
+
+        winPanel.SetActive(false);
     }
 
     static void TestNavMesh()
