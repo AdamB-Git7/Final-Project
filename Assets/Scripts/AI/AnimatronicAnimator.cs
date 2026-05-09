@@ -1,126 +1,282 @@
+
+// Imports the UnityEngine namespace.
 using UnityEngine;
+
+// Imports the UnityEngine.AI namespace.
 using UnityEngine.AI;
+
+// Imports the System.Collections.Generic namespace.
 using System.Collections.Generic;
 
-// =====================================================================
-//  ANIMATRONIC ANIMATOR — animates the animatronic body
-// =====================================================================
-//  All done in code (no Animator Controller).
-//   - Body sways side-to-side while walking
-//   - Body bobs up and down while walking
-//   - Head turns left/right
-//   - Eye pupils pulse red
-// =====================================================================
-public class AnimatronicAnimator : MonoBehaviour
-{
-    [Header("Walking animation")]
-    public float swayAmount = 25f;     // degrees of side-to-side
-    public float bobAmount = 0.2f;     // meters up/down
-    public float walkFrequency = 5f;   // how fast the cycle is
 
+
+
+
+
+
+
+
+
+
+// Declares the class named AnimatronicAnimator.
+public class AnimatronicAnimator : MonoBehaviour
+
+// Opens a new code block.
+{
+
+    // Applies the Header("Walking animation") attribute.
+    [Header("Walking animation")]
+
+    // Declares the variable swayAmount and initializes it.
+    public float swayAmount = 25f;
+
+    // Declares the variable bobAmount and initializes it.
+    public float bobAmount = 0.2f;
+
+    // Declares the variable walkFrequency and initializes it.
+    public float walkFrequency = 5f;
+
+
+    // Applies the Header("Eye flicker") attribute.
     [Header("Eye flicker")]
+
+    // Declares the variable flickerSpeed and initializes it.
     public float flickerSpeed = 8f;
+
+    // Declares the variable minIntensity and initializes it.
     public float minIntensity = 0.5f;
+
+    // Declares the variable maxIntensity and initializes it.
     public float maxIntensity = 6f;
 
-    NavMeshAgent agent;
-    Transform body;              // the animatronic itself
-    Transform head;              // the head child
-    Vector3 baseBodyPos;
-    Quaternion baseBodyRot;
-    Quaternion baseHeadRot;
-    List<Renderer> eyeRenderers; // pupils that we change emission color on
 
-    // =================================================================
-    //  Start() — runs once
-    // =================================================================
+    // Declares the variable agent.
+    NavMeshAgent agent;
+
+    // Declares the variable body.
+    Transform body;
+
+    // Declares the variable head.
+    Transform head;
+
+    // Declares the variable baseBodyPos.
+    Vector3 baseBodyPos;
+
+    // Declares the variable baseBodyRot.
+    Quaternion baseBodyRot;
+
+    // Declares the variable baseHeadRot.
+    Quaternion baseHeadRot;
+
+    // Declares the variable eyeRenderers.
+    List<Renderer> eyeRenderers;
+
+
+
+
+
+    // Declares the method named Start.
     void Start()
+
+    // Opens a new code block.
     {
+
+        // Updates an existing value.
         agent = GetComponent<NavMeshAgent>();
 
-        // Save the resting pose so we can return to it when not walking
+
+
+        // Updates an existing value.
         body = transform;
+
+        // Updates an existing value.
         baseBodyPos = body.localPosition;
+
+        // Updates an existing value.
         baseBodyRot = body.localRotation;
 
-        // Find the head child (named "Head")
+
+
+        // Updates an existing value.
         head = transform.Find("Head");
+
+        // Checks the condition and runs the inline statement when it is true.
         if (head != null) baseHeadRot = head.localRotation;
 
-        // Build a list of all "eye"/"pupil" renderers in the children
+
+
+        // Updates an existing value.
         eyeRenderers = new List<Renderer>();
+
+        // Declares the variable allRenderers and initializes it.
         Renderer[] allRenderers = GetComponentsInChildren<Renderer>();
+
+        // Iterates through each item in the collection.
         foreach (Renderer r in allRenderers)
+
+        // Opens a new code block.
         {
+
+            // Declares the variable lowerName and initializes it.
             string lowerName = r.gameObject.name.ToLower();
+
+            // Checks whether the condition is true.
             if (lowerName.StartsWith("pupil") || lowerName.StartsWith("eye"))
+
+                // Calls a method.
                 eyeRenderers.Add(r);
+
+        // Closes the current code block.
         }
+
+    // Closes the current code block.
     }
 
-    // =================================================================
-    //  Update() — runs every frame
-    // =================================================================
+
+
+
+
+    // Declares the method named Update.
     void Update()
+
+    // Opens a new code block.
     {
+
+        // Calls a method.
         AnimateWalk();
+
+        // Calls a method.
         AnimateEyes();
+
+    // Closes the current code block.
     }
 
-    // -----------------------------------------------------------------
-    //  Animate the walking sway/bob using sine waves
-    // -----------------------------------------------------------------
+
+
+
+
+    // Declares the method named AnimateWalk.
     void AnimateWalk()
+
+    // Opens a new code block.
     {
+
+        // Checks the condition and runs the inline statement when it is true.
         if (agent == null || body == null) return;
 
-        // Are we actually moving? sqrMagnitude > 0.1 = "yes"
+
+
+        // Declares the variable walking and initializes it.
         bool walking = agent.velocity.sqrMagnitude > 0.1f;
 
+
+        // Checks whether the condition is true.
         if (!walking)
+
+        // Opens a new code block.
         {
-            // Smoothly return to the resting pose
+
+
+            // Updates an existing value.
             body.localPosition = Vector3.Lerp(body.localPosition, baseBodyPos, Time.deltaTime * 5f);
+
+            // Updates an existing value.
             body.localRotation = Quaternion.Slerp(body.localRotation, baseBodyRot, Time.deltaTime * 5f);
+
+            // Checks whether the condition is true.
             if (head != null)
+
+                // Updates an existing value.
                 head.localRotation = Quaternion.Slerp(head.localRotation, baseHeadRot, Time.deltaTime * 5f);
+
+            // Returns from the current method.
             return;
+
+        // Closes the current code block.
         }
 
-        // We're walking — apply sine-wave sway and bob
-        // Sin(t) returns a value between -1 and +1 that oscillates
-        float t = Time.time * walkFrequency;
-        float sway = Mathf.Sin(t) * swayAmount;          // side-to-side
-        float bob = Mathf.Abs(Mathf.Sin(t)) * bobAmount; // up only (no negative)
 
+
+
+        // Declares the variable t and initializes it.
+        float t = Time.time * walkFrequency;
+
+        // Declares the variable sway and initializes it.
+        float sway = Mathf.Sin(t) * swayAmount;
+
+        // Declares the variable bob and initializes it.
+        float bob = Mathf.Abs(Mathf.Sin(t)) * bobAmount;
+
+
+        // Updates an existing value.
         body.localPosition = baseBodyPos + new Vector3(0, bob, 0);
+
+        // Updates an existing value.
         body.localRotation = baseBodyRot * Quaternion.Euler(0, 0, sway);
 
-        // Head turns left/right slowly as if looking around
+
+
+        // Checks whether the condition is true.
         if (head != null)
+
+        // Opens a new code block.
         {
+
+            // Declares the variable headTurn and initializes it.
             float headTurn = Mathf.Sin(t * 0.5f) * 20f;
+
+            // Updates an existing value.
             head.localRotation = baseHeadRot * Quaternion.Euler(0, headTurn, 0);
+
+        // Closes the current code block.
         }
+
+    // Closes the current code block.
     }
 
-    // -----------------------------------------------------------------
-    //  Animate the eye glow pulsing red
-    // -----------------------------------------------------------------
+
+
+
+
+    // Declares the method named AnimateEyes.
     void AnimateEyes()
+
+    // Opens a new code block.
     {
+
+        // Checks the condition and runs the inline statement when it is true.
         if (eyeRenderers == null || eyeRenderers.Count == 0) return;
 
-        // Map sin (-1 to 1) into (0 to 1), then lerp between min and max
+
+
+        // Declares the variable wave and initializes it.
         float wave = (Mathf.Sin(Time.time * flickerSpeed) + 1f) * 0.5f;
+
+        // Declares the variable pulse and initializes it.
         float pulse = Mathf.Lerp(minIntensity, maxIntensity, wave);
 
+
+        // Iterates through each item in the collection.
         foreach (Renderer r in eyeRenderers)
+
+        // Opens a new code block.
         {
+
+            // Checks the condition and runs the inline statement when it is true.
             if (r == null || r.material == null) continue;
-            // Only adjust materials that have an emission property
+
+
+            // Checks whether the condition is true.
             if (r.material.HasProperty("_EmissionColor"))
+
+                // Calls a method.
                 r.material.SetColor("_EmissionColor", Color.red * pulse);
+
+        // Closes the current code block.
         }
+
+    // Closes the current code block.
     }
+
+// Closes the current code block.
 }

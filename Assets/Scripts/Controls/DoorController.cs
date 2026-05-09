@@ -1,110 +1,224 @@
+
+// Imports the UnityEngine namespace.
 using UnityEngine;
 
-// =====================================================================
-//  DOOR CONTROLLER — handles one office door
-// =====================================================================
-//  How it works:
-//    - Player presses the door's key (Q for left, E for right)
-//    - The door panel slides UP (opening) or back DOWN (closing)
-//    - When closed, a NavMeshObstacle blocks the AI from passing through
-// =====================================================================
+
+
+
+
+
+
+
+
+
+// Declares the class named DoorController.
 public class DoorController : MonoBehaviour
+
+// Opens a new code block.
 {
+
+    // Applies the Header("Door Settings") attribute.
     [Header("Door Settings")]
-    public KeyCode toggleKey = KeyCode.Q;  // which key opens/closes this door
-    public float doorSpeed = 5f;           // how fast the door slides
 
+    // Declares the variable toggleKey and initializes it.
+    public KeyCode toggleKey = KeyCode.Q;
+
+    // Declares the variable doorSpeed and initializes it.
+    public float doorSpeed = 5f;
+
+
+    // Applies the Header("State") attribute.
     [Header("State")]
-    public bool isClosed = true;           // current state (visible in Inspector)
 
+    // Declares the variable isClosed and initializes it.
+    public bool isClosed = true;
+
+
+    // Applies the Header("References") attribute.
     [Header("References")]
-    // NavMeshObstacle = blocks the AI's pathfinding. When enabled it
-    // "carves" a hole in the NavMesh so the AI must walk around
+
+
+
+    // Executes this statement.
     public UnityEngine.AI.NavMeshObstacle doorBlocker;
 
-    // Internal — tracks the door panel's position
-    Transform doorPanel;     // the visual door mesh
-    Vector3 closedPos;       // resting (down) position
-    Vector3 openPos;         // raised position
 
-    // =================================================================
-    //  Start() — runs once when the door spawns
-    // =================================================================
+
+    // Declares the variable doorPanel.
+    Transform doorPanel;
+
+    // Declares the variable closedPos.
+    Vector3 closedPos;
+
+    // Declares the variable openPos.
+    Vector3 openPos;
+
+
+
+
+
+    // Declares the method named Start.
     void Start()
+
+    // Opens a new code block.
     {
-        // Find the child GameObject named "DoorPanel" (the visible door)
+
+
+        // Updates an existing value.
         doorPanel = transform.Find("DoorPanel");
 
+
+        // Checks whether the condition is true.
         if (doorPanel != null)
+
+        // Opens a new code block.
         {
-            // Remember its starting position (closed = down)
+
+
+            // Updates an existing value.
             closedPos = doorPanel.localPosition;
-            // Open position = 2.5 units higher (slides up out of the way)
+
+
+            // Updates an existing value.
             openPos = closedPos + new Vector3(0, 2.5f, 0);
+
+        // Closes the current code block.
         }
 
-        // Sync the obstacle: enabled when closed, disabled when open
+
+
+        // Checks whether the condition is true.
         if (doorBlocker != null)
+
+            // Updates an existing value.
             doorBlocker.enabled = isClosed;
+
+    // Closes the current code block.
     }
 
-    // =================================================================
-    //  Update() — runs every frame
-    // =================================================================
+
+
+
+
+    // Declares the method named Update.
     void Update()
+
+    // Opens a new code block.
     {
-        // Did the player press the toggle key this frame?
+
+
+        // Checks whether the condition is true.
         if (Input.GetKeyDown(toggleKey))
+
+        // Opens a new code block.
         {
+
+            // Calls a method.
             ToggleDoor();
+
+        // Closes the current code block.
         }
 
-        // Smoothly slide the door panel toward its target position
+
+
+        // Checks whether the condition is true.
         if (doorPanel != null)
+
+        // Opens a new code block.
         {
-            // Pick the target based on state (closed = closedPos, open = openPos)
+
+
+            // Declares the variable target and initializes it.
             Vector3 target = isClosed ? closedPos : openPos;
 
-            // Lerp = linear interpolation. Move a fraction toward target each frame.
-            // Time.deltaTime * doorSpeed makes it speed-independent of frame rate.
+
+
+
+            // Updates an existing value.
             doorPanel.localPosition = Vector3.Lerp(doorPanel.localPosition, target, Time.deltaTime * doorSpeed);
+
+        // Closes the current code block.
         }
+
+    // Closes the current code block.
     }
 
-    // =================================================================
-    //  ToggleDoor() — flip the door state (closed ↔ open)
-    //  Called by player input AND by other scripts
-    // =================================================================
-    public void ToggleDoor()
-    {
-        isClosed = !isClosed;  // flip the bool
 
-        // Enable or disable the AI blocker to match
+
+
+
+
+    // Declares the method named ToggleDoor.
+    public void ToggleDoor()
+
+    // Opens a new code block.
+    {
+
+        // Updates an existing value.
+        isClosed = !isClosed;
+
+
+
+        // Checks whether the condition is true.
         if (doorBlocker != null)
+
+            // Updates an existing value.
             doorBlocker.enabled = isClosed;
 
-        // Play the door slam sound effect
+
+
+        // Checks whether the condition is true.
         if (AudioManager.Instance != null)
+
+            // Calls a method.
             AudioManager.Instance.PlayDoorClose();
+
+    // Closes the current code block.
     }
 
-    // =================================================================
-    //  CloseDoor() — force-close (used by AI logic if needed)
-    // =================================================================
+
+
+
+
+    // Declares the method named CloseDoor.
     public void CloseDoor()
+
+    // Opens a new code block.
     {
+
+        // Updates an existing value.
         isClosed = true;
+
+        // Checks whether the condition is true.
         if (doorBlocker != null)
+
+            // Updates an existing value.
             doorBlocker.enabled = true;
+
+    // Closes the current code block.
     }
 
-    // =================================================================
-    //  OpenDoor() — force-open (the AI calls this when breaking in)
-    // =================================================================
+
+
+
+
+    // Declares the method named OpenDoor.
     public void OpenDoor()
+
+    // Opens a new code block.
     {
+
+        // Updates an existing value.
         isClosed = false;
+
+        // Checks whether the condition is true.
         if (doorBlocker != null)
+
+            // Updates an existing value.
             doorBlocker.enabled = false;
+
+    // Closes the current code block.
     }
+
+// Closes the current code block.
 }
